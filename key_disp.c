@@ -1,42 +1,51 @@
 //*************************************************************
-//***	液晶表示器　制御
+//***	液晶表示器　制御-Liquid crystal display control 
 //***
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "iodefine.h"
 #include "key_disp.h"
 #include "rtc_fram.h"
 #include "uart2.h"
 #include "uart3.h"
 
-//*** 変数
-unsigned char	dsp_buff1[24];
-unsigned char	dsp_buff2[24];
-unsigned char 	dsp_data1[24];
-unsigned char 	dsp_data2[24];
-unsigned char	lcd_page;
-unsigned char	key_code;
-unsigned char	key_cursol;
+//*** 変数-variable 
+unsigned char dsp_buff1[24];
+unsigned char dsp_buff2[24];
+unsigned char var;
+unsigned char dsp_data1[24];
+unsigned char dsp_data2[24];
+unsigned char lcd_page;
+unsigned char	 key_code;
+unsigned char	 key_cursol;
 //
-unsigned char	moded;
-unsigned char	upd;
-unsigned char	downd;
-unsigned char	leftd;
-unsigned char	rightd;
-unsigned char	setd;
+unsigned char moded;
+unsigned char	 upd;
+unsigned char downd;
+unsigned char leftd;
+unsigned char	 rightd;
+unsigned char	 setd;
 //
-unsigned char	bmoded;
-unsigned char	bupd;
-unsigned char	bdownd;
-unsigned char	bleftd;
-unsigned char	brightd;
-unsigned char	bsetd;
+unsigned char	 bmoded;
+unsigned char bupd;
+unsigned char bdownd;
+unsigned char bleftd;
+unsigned char brightd;
+unsigned char	 bsetd;
 //
 unsigned char pos;
 unsigned char uart_txd;
 unsigned char uart_ret;
 //
-
+typedef int bool;
+#define true 1
+#define false 0
+bool blink_enabled = false; 
+//
+unsigned char titl_l1[24] = "happy day *    ";
+unsigned char titl_l2[24] = "9930 2214              ";
 /**************************************************
  液晶表示制御-Liquid crystal display control 
 **************************************************/
@@ -45,30 +54,32 @@ void lcd_disp(void)
 	key_code = key_switch_in();
                                // ｷｰ入力ﾁｪｯｸ(表示ﾓｰﾄﾞ切替-Key input check (display mode switching)
 	if (key_code == KEY_MODE) {		//MODE押下(-Press) 
-		if (lcd_page >= 0x80) 	lcd_page = 0;
+		if (lcd_page >= 0x90) 	lcd_page = 0;
 		else			lcd_page += 0x10;
 		key_code = 0;
 	}
 //
 	switch(lcd_page) {
 		//ｳｫｰﾑｱｯﾌﾟ画面表示
-		case 0x1000:	dsp_warmup(0x00);	break;	// 画面(*10) ｳｫｰﾑｱｯﾌﾟ画面
+		case 0x1000:	dsp_warmup(0x00);	break;	        // 画面(*10) ｳｫｰﾑｱｯﾌﾟ画面
 //		
 		//ﾃﾞｰﾀ表示(*0x)
-		case 0x0000:	dsp_main(0x00);		break;	// 画面(*00) ﾒｲﾝﾃﾞｰﾀ画面
-		case 0x0010:	dsp_bcdin(0x10);	break;	// 画面(*10) BCD入力画面
-		case 0x0020:	dsp_rainin(0x20);	break;	// 画面(*20) 積算雨量画面
-		case 0x0030:	dsp_voltage(0x30);	break;	// 画面(*30) DC電圧
-		case 0x0040:	dsp_clock(0x40);	break;	// 画面(*40) 時計設定画面
+		case 0x0000:	dsp_main(0x00);		break;	        // 画面(*00) ﾒｲﾝﾃﾞｰﾀ画面
+		case 0x0010:	dsp_bcdin(0x10);	break;	                // 画面(*10) BCD入力画面
+		case 0x0020:	dsp_rainin(0x20);	break;	                // 画面(*20) 積算雨量画面
+		case 0x0030:	dsp_voltage(0x30);	break;	        // 画面(*30) DC電圧
+		case 0x0040:	dsp_clock(0x40);	break;	                // 画面(*40) 時計設定画面
 		case 0x0041:	dsp_clock_adjust(0x41);	break;	// 画面(*41) 時計設定画面
-		case 0x0050:	dsp_gps(0x50);		break;	// 画面(*50) GPS入力画面
-		case 0x0060:	dsp_usb(0x60);		break;	// 画面(*60) USB出力画面
-		case 0x0070:	dsp_fram(0x70);		break;	// 画面(*70) FRAM画面
-		case 0x0080:	dsp_sdc(0x80);		break;	// 画面(*80) SDカード画面
+		case 0x0050:	dsp_gps(0x50);		break;	        // 画面(*50) GPS入力画面
+		case 0x0060:	dsp_usb(0x60);		break;	        // 画面(*60) USB出力画面
+		case 0x0070:	dsp_fram(0x70);		break;	        // 画面(*70) FRAM画面
+		case 0x0080:	dsp_sdc(0x80);		break;	        // 画面(*80) SDカード画面
 //
+                case 0x0090:	dsp_new(0x90);		break;
 		default:	lcd_page = 0;		break;
 	}
 }
+
 //****************************************
 //***	ウォームアップ表示
 //***
@@ -151,9 +162,9 @@ void dsp_bcdin(unsigned char page_num)
 	dsp_buff_disp();
 }
 
-/******************************************
- *02 積算雨量画面表示
-******************************************/
+/*****************************************************************
+ *02 積算雨量画面表示-Cumulative rainfall screen display 
+******************************************************************/
 void dsp_rainin(unsigned char page_num)
 {
 	unsigned char n,d1,d2;
@@ -178,9 +189,9 @@ void dsp_rainin(unsigned char page_num)
 //
 	dsp_buff_disp();
 }
-/******************************************
- *03 DC電圧画面表示
-******************************************/
+/***************************************************
+ *03 DC電圧画面表示-Voltage screen display 
+***************************************************/
 void dsp_voltage(unsigned char page_num)
 {
 	unsigned char n;
@@ -199,13 +210,13 @@ void dsp_voltage(unsigned char page_num)
 	n = vdd_bc % 100;
 	dsp_buff2[7] = (n / 10) + 0x30;
 	dsp_buff2[9] = (n % 10) + 0x30;
-
 //
 	dsp_buff_disp();
 }
-/******************************************
-* 40 時計表示画面
-******************************************/
+
+/********************************************
+* 40 時計表示画面-Clock display screen 
+********************************************/
 void dsp_clock(unsigned char page_num)
 {
 	unsigned char n;
@@ -233,19 +244,20 @@ void dsp_clock(unsigned char page_num)
 		rtc_write_hour = rtc_read_hour;
 		rtc_write_min = rtc_read_min;
 		rtc_write_sec = rtc_read_sec;
-		lcd_cout(0x0F);			//ｶｰｿﾙON
-		key_cursol = 18;		//ｶｰｿﾙ位置設定
-		lcd_cout(0xc0 + key_cursol);	//ｶｰｿﾙ位置をLCD2行目書込み
+		lcd_cout(0x0F);			          //ｶｰｿﾙON
+		key_cursol = 18;		                  //ｶｰｿﾙ位置設定
+		lcd_cout(0xc0 + key_cursol);	          //ｶｰｿﾙ位置をLCD2行目書込み
 		lcd_page = 0x0041;
 //
-		key_code = 0;			//ｷｰ入力ｸﾘﾔ
+		key_code = 0;			                  //ｷｰ入力ｸﾘﾔ
 	}
 //
 	dsp_buff_disp();
 }
-/******************************************
- *41 時計校正画面表示
-******************************************/
+
+/**************************************************************
+ *41 時計校正画面表示-Clock calibration screen display 
+**************************************************************/
 void dsp_clock_adjust(unsigned char page_num)
 {
 	unsigned char n;
@@ -259,31 +271,31 @@ void dsp_clock_adjust(unsigned char page_num)
 //
 	bcd2d_disp(1,18,page_num);
 //RTC書込み用ﾃﾞｰﾀ表示
-	bcd2d_disp(2,2,rtc_write_year);		//yearを2行目の2文字目に表示
-	bcd2d_disp(2,5,rtc_write_month);	//month
-	bcd2d_disp(2,8,rtc_write_day);		//day
-	bcd2d_disp(2,11,rtc_write_hour);	//hour
-	bcd2d_disp(2,14,rtc_write_min);		//minuts
-	bcd2d_disp(2,17,rtc_write_sec);		//second
+	bcd2d_disp(2,2,rtc_write_year);		   //yearを2行目の2文字目に表示
+	bcd2d_disp(2,5,rtc_write_month);	           //month
+	bcd2d_disp(2,8,rtc_write_day);		   //day
+	bcd2d_disp(2,11,rtc_write_hour);	           //hour
+	bcd2d_disp(2,14,rtc_write_min);		   //minuts
+	bcd2d_disp(2,17,rtc_write_sec);		   //second
 //
 	dsp_buff_disp();
 //
-	lcdLocate(1,key_cursol);	//ｶｰｿﾙ位置をLCD2行目書込み
-	lcd_cout(0x0E);			//ｶｰｿﾙON
+	lcdLocate(1,key_cursol);	                   //ｶｰｿﾙ位置をLCD2行目書込み
+	lcd_cout(0x0E);			                   //ｶｰｿﾙON
 
 //ﾎﾞﾀﾝｽｲｯﾁによるﾃﾞｰﾀ変更
 // ＜ボタン
 	if (key_code == KEY_LEFT){
 		if (key_cursol <= 3) key_cursol = 18;
 		else key_cursol = key_cursol - 3;
-		lcd_cout(0xc0 + key_cursol);	//ｶｰｿﾙ位置をLCD2行目書込み
+		lcd_cout(0xc0 + key_cursol);	             //ｶｰｿﾙ位置をLCD2行目書込み
 		key_code = 0;
 	}
 //  ＞ボタン
 	if (key_code == KEY_RIGHT){
 		if (key_cursol >= 18) key_cursol = 3;
 		else key_cursol = key_cursol + 3;
-		lcd_cout(0xc0 + key_cursol);	//ｶｰｿﾙ位置をLCD2行目書込み
+		lcd_cout(0xc0 + key_cursol);	             //ｶｰｿﾙ位置をLCD2行目書込み
 		key_code = 0;
 	}
 // UPボタン
@@ -297,7 +309,6 @@ void dsp_clock_adjust(unsigned char page_num)
 			case 18: rtc_write_sec++;	break;	//
 			default: key_cursol = 18;	break;	//
 		}
-
 		key_code = 0;
 	}
 // DOWNボタン
@@ -312,7 +323,6 @@ void dsp_clock_adjust(unsigned char page_num)
 			case 18: rtc_write_sec--;	break;	//
 			default: key_cursol = 15;	break;	//
 		}
-
 		key_code = 0;
 	}
 //時計ﾃﾞｰﾀ補正
@@ -338,22 +348,21 @@ void dsp_clock_adjust(unsigned char page_num)
 
 //[SET]ボタンチェック
 	if (key_code == KEY_SET){
-		rtc_data_write();		//write to RTC
-		lcd_cout(0x0C);			//ｶｰｿﾙOFF
+		rtc_data_write();		         //write to RTC
+		lcd_cout(0x0C);			 //ｶｰｿﾙOFF
 		lcd_page = 0x0040;
 		key_code = 0;
 	}
 }
 
-
-/******************************************
- *05 GPS入力データ表示
-******************************************/
+/***********************************************
+ *05 GPS入力データ表示-input data display 
+***********************************************/
 void dsp_gps(unsigned char page_num)
 {
 	unsigned char n;
 	unsigned char titl_l1[24] = "GPS              *  ";
-	unsigned char titl_l2[24] = "00,00,00,11,30,45.00";
+	unsigned char titl_l2[24] = "00,00,00,11,30,45.00";	
 //ﾀｲﾄﾙ表示
 	for (n=0 ;n<20 ;n++){
 		dsp_buff1[n] = titl_l1[n];
@@ -373,20 +382,22 @@ void dsp_gps(unsigned char page_num)
 		dsp_buff1[5] = 'F';
 		dsp_buff1[6] = 'F';
 		P7 |= 0x10;		//GPS OFF(Hi OFF)
+		//bcd2d_disp(2,1,rx2_id_buff[20]);
+		
 	}
 	else {
 		dsp_buff1[4] = 'O';
 		dsp_buff1[5] = 'N';
 		dsp_buff1[6] = ' ';
-		P7 &= 0xEF;		//GPS ON(Lo ON)
+		P7 &= 0xEF;		//GPS ON(Lo ON)	
+		
 	}
-//
 	dsp_buff_disp();
 }
 
-/******************************************
- *06 USB出力制御画面表示
-******************************************/
+/****************************************************************
+ *06 USB出力制御画面表示-Output control screen display
+*****************************************************************/
 void dsp_usb(unsigned char page_num)
 {
 	unsigned char n;
@@ -411,8 +422,8 @@ void dsp_usb(unsigned char page_num)
 	dsp_buff_disp();
 //[SET]ボタンチェック
 	if (key_code == KEY_SET){
-		tx_buff[32] = 0x0d;	//<CR>
-		tx_buff[33] = 0x0a;	//<LF>
+		tx_buff[32] = 0x0d;           	//<CR>
+		tx_buff[33] = 0x0a;	                //<LF>
 		for (n=0; n<34; n++){
 			uart_txd = tx_buff[n];
 			uart_ret = UART3_tx_1b(uart_txd);
@@ -421,9 +432,10 @@ void dsp_usb(unsigned char page_num)
 		key_code = 0;
 	}
 }
-/******************************************
- *07 FRAM画面表示
-******************************************/
+
+/****************************************
+ *07 FRAM画面表示-Screen display
+*****************************************/
 void dsp_fram(unsigned char page_num)
 {
 	unsigned char n;
@@ -439,8 +451,9 @@ void dsp_fram(unsigned char page_num)
 //
 	dsp_buff_disp();
 }
+
 /******************************************
- *08 SDカード画面表示
+ *08 SDカード画面表示-Screen display
 ******************************************/
 void dsp_sdc(unsigned char page_num)
 {
@@ -459,16 +472,131 @@ void dsp_sdc(unsigned char page_num)
 
 }
 
-//*********************************************************
-//**  操作スイッチ　入力
-//**
+/**********************************
+ *new 画面表示-Screen display
+***********************************/
+void dsp_new(unsigned char page_num)
+{
+	unsigned char n, dsp_buf;		
+//タイトル表示
+       for (n=0 ;n<20 ;n++){
+		dsp_buff1[n] = titl_l1[n];
+		dsp_buff2[n] = titl_l2[n];
+	}
+//
+	bcd2d_disp(1,18,page_num);
+	dsp_buff_disp();       
+
+        if (key_code == KEY_LEFT){
+		if (key_cursol <= 0) key_cursol = 18;
+		else key_cursol = key_cursol - 1;
+		lcd_cout(0xc0 + key_cursol);	            
+		key_code = 0;
+	}
+
+        if (key_code == KEY_RIGHT){
+		if (key_cursol >= 18) key_cursol = 0;
+		else key_cursol = key_cursol + 1;
+		lcd_cout(0xc0 + key_cursol);	             //ｶｰｿﾙ位置をLCD2行目書込み
+		key_code = 0;
+	}		                  
+
+        if (key_code == KEY_UP){
+		switch( key_cursol) {
+			case 0:	
+		                      titl_l2[0]++;	
+				      if(titl_l2[0] > 0x39) titl_l2[0] = 0x30 ;
+			              break;	
+			case 1:  titl_l2[1]++;	
+				      if(titl_l2[1] > 0x39) titl_l2[1] = 0x30 ;
+				      break;	
+			case 2:  titl_l2[2]++;	
+				      if(titl_l2[2] > 0x39) titl_l2[2] = 0x30 ;
+				      break;
+			case 3:    titl_l2[3]++;	
+				      if(titl_l2[3] > 0x39) titl_l2[3] = 0x30 ;
+				      break;
+			case 4:    titl_l2[5]++;	
+				      if(titl_l2[5] > 0x39) titl_l2[5] = 0x30 ;
+				      break;	
+			case 5:    titl_l2[6]++;	
+				      if(titl_l2[6] > 0x39) titl_l2[6] = 0x30 ;
+				      break;
+			case 6:    titl_l2[7]++;	
+				      if(titl_l2[7] > 0x39) titl_l2[7] = 0x30 ;
+				      break;
+	               case 7:    titl_l2[8]++;	
+				      if(titl_l2[8] > 0x39) titl_l2[8] = 0x30 ;
+				      break;
+	               case 8:    titl_l2[9]++;	
+				      if(titl_l2[9] > 0x39) titl_l2[9] = 0x30 ;
+				      break;			      
+		       default:    key_cursol = 18;	break;	
+		}
+		key_code = 0;
+	}
+
+          if (key_code == KEY_DOWN){
+		switch( key_cursol) {
+			case 0:	
+		                      titl_l2[0]--;	
+				      if(titl_l2[0] < 0x30) titl_l2[0] = 0x39 ;
+			              break;	
+			case 1:  titl_l2[1]--;	
+				      if(titl_l2[1] < 0x30) titl_l2[1] = 0x39 ;
+				      break;	
+			case 2:  titl_l2[2]--;	
+				      if(titl_l2[2] < 0x30) titl_l2[2] = 0x39 ;
+				      break;
+			case 3:    titl_l2[3]--;	
+				      if(titl_l2[3] < 0x30) titl_l2[3] = 0x39 ;
+				      break;
+			case 4:    titl_l2[5]--;	
+				      if(titl_l2[5] < 0x30) titl_l2[5] = 0x39 ;
+				      break;	
+			case 5:    titl_l2[6]--;	
+				      if(titl_l2[6] < 0x30) titl_l2[6] = 0x39 ;
+				      break;
+			case 6:    titl_l2[7]--;	
+				      if(titl_l2[7] < 0x30) titl_l2[7] = 0x39 ;
+				      break;
+	                case 7:    titl_l2[8]--;	
+				      if(titl_l2[8] < 0x30) titl_l2[8] = 0x39 ;
+				      break;
+	                case 8:    titl_l2[9]--;	
+				      if(titl_l2[9] < 0x30) titl_l2[9] = 0x39 ;
+				      break;			      
+		        default:    key_cursol = 18;	break;	
+		}
+		key_code = 0;
+	}
+	 
+	 if (key_code == KEY_SET){		
+		if (blink_enabled == true) {			// Turn off blinking.     
+             		lcd_cout(0x0c);
+			blink_enabled = false;
+			key_cursol = 0;
+		}
+    		else {
+			key_cursol = 2;
+             		lcdLocate(1,key_cursol);			// Turn on blinking.
+             		lcd_cout(0x0f);
+             		blink_enabled = true;
+             	}
+             	 key_code = 0;
+	 }
+}
+
+//************************************************
+//**  操作スイッチ入力-Operation switch input
+//**************************************************
 unsigned char key_switch_in(void)
 {
 	unsigned char keyid1,keyid2,keyid3;
 //ｷｰ入力
-	keyid1	= P1;			//<3>MODE,<4>UP,<5>DOWN
-	keyid2	= P5;			//<4>LEFT,<5>RIGHT
-	keyid3	= P10;			//<0>SET
+	keyid1	= P1;			     //<3>MODE,<4>UP,<5>DOWN
+	keyid2	= P5;			     //<4>LEFT,<5>RIGHT
+	keyid3	= P10;			     //<0>SET
 	moded 	= keyid1 & 0x08;
 	upd   	= keyid1 & 0x10;
 	downd 	= keyid1 & 0x20;
@@ -504,23 +632,24 @@ unsigned char key_switch_in(void)
 
 	return(key_code);
 }
-//*******************************************************
+
+//**********************************************
 //***	画面番号（2桁数字）表示
 //***  1行目右上のdsp_buff1[]にﾃﾞｰﾀをセット
-//***
+//**********************************************
 void	pageno_disp(unsigned char page_num)
 {
-	unsigned char	d1,d2;
-	
+	unsigned char	d1,d2;	
 	d1 = page_num / 0x10;	
 	d2 = page_num % 0x10;
 	dsp_buff1[18] = d1 + 0x30;
 	dsp_buff1[19] = d2 + 0x30;
 }
-//*******************************************************
+
+//********************************
 //***	2桁数字 表示
 //***  dsp_buff1[]にﾃﾞｰﾀをセット
-//***
+//********************************
 void	bcd2d_disp(unsigned char line,unsigned char pos,unsigned char bcd_2d)
 {
 	unsigned char	d1,d2;
@@ -535,21 +664,17 @@ void	bcd2d_disp(unsigned char line,unsigned char pos,unsigned char bcd_2d)
 		dsp_buff2[pos] = d1 + 0x30;
 		dsp_buff2[pos+1] = d2 + 0x30;
 	}
-}//*******************************************************
-// 1文字送信関数(ﾎﾟｰﾘﾝｸﾞ版)											//
-//char lcd_putc(char s)
-//{
-//	lcd_dout(s);
-//	return(0);
-//}
+}
 
-//*****************************************
+//*******************************
+// 1文字送信関数(ﾎﾟｰﾘﾝｸﾞ版)											
+//*******************************
 void dsp_buff_disp(void)
 {
 	unsigned char n;
 	unsigned char dsp_1b;
-	unsigned char l1_write_flag = 0;	//1行目変化有無フラグ
-	unsigned char l2_write_flag = 0;	//2行目変化有無フラグ
+	unsigned char l1_write_flag = 0;	      //1行目変化有無フラグ
+	unsigned char l2_write_flag = 0;	      //2行目変化有無フラグ
 	
 //表示内容変化有無チェック
 	for (n=0 ;n<20 ;n++){
@@ -560,24 +685,25 @@ void dsp_buff_disp(void)
 	}		
 //変化有ったとき1行目表示
 	if (l1_write_flag == 1){
-		lcd_l1(0x00);				//1行目先頭アドレスセット
+		lcd_l1(0x00);				        //1行目先頭アドレスセット
 		for (n=0 ;n<20 ;n++) {
 			dsp_1b = dsp_buff1[n];		//line 1
-			lcd_dout(dsp_1b);		//1data write
+			lcd_dout(dsp_1b);		        //1data write
 		}
 	}
 //変化有ったとき2行目表示
 	if (l2_write_flag == 1){
-		lcd_l2(0x00);				//2行目先頭アドレスセット
+		lcd_l2(0x00);				        //2行目先頭アドレスセット
 		for (n=0 ;n<20 ;n++) {
 			dsp_1b = dsp_buff2[n];		//line 2
-			lcd_dout(dsp_1b);		//1data write
+			lcd_dout(dsp_1b);		        //1data write
 		}
 	}
 }
-//********************************************************
-//**　LCD初期化(STKW-186)
-//
+
+//****************************************************
+//**　LCD初期化(STKW-186)-LCD initialization
+//****************************************************
 void lcd_init(void)
 {
 	P3 |=0x02;		//5V ON
@@ -607,16 +733,7 @@ void lcd_init(void)
 	delay_micro(100);
 	P4 &= 0xEF;		//E=0
 	delay_msec(5);
-//** ここから4ﾋﾞｯﾄﾃﾞｰﾀ長
-//	lcd_cout(0x08);		//表示ｵﾌ	
-//	delay_msec(5);
-//	lcd_cout(0x01);		//表示ｸﾘﾔｰ	
-//	delay_msec(5);
-//	lcd_cout(0x06);		//ｴﾝﾄﾘｰﾓｰﾄﾞｾｯﾄ	
-//	delay_msec(5);
-//	lcd_cout(0x0E);		//表示on、ｶｰｿﾙon
-//	delay_msec(5);
-//
+
 	lcd_cout(0x02);		                          //for 4-bit lcd intialization
 	delay_msec(5);
 	lcd_cout(0x28);		
@@ -629,43 +746,43 @@ void lcd_init(void)
 	delay_msec(5); 		
 }
 
-//*****************************************
+//************************************
 //** ｶｰｿﾙ位置設定
 //** line 	0 :1行目、0以外：2行目
 //** column	:列(0は左端)
-//
+//************************************
 void lcdLocate(unsigned char line,unsigned char column)
 {
 	if (line == 0) 	lcd_l1(column);
 	else 		lcd_l2(column);
 }
 
-//*****************************************
+//********************
 //** 1行目ｱﾄﾞﾚｽｾｯﾄ
 //** column(列)
-//
+//********************
 void lcd_l1(unsigned char column)
 {
 //	unsigned char pos;
-
 	pos = column & 0x3F;	//列の最大値＝64
-	pos = pos | 0x80;	//1行目ﾋﾞｯﾄ追加
+	pos = pos | 0x80;	        //1行目ﾋﾞｯﾄ追加
 	lcd_cout(pos);
 }
-//*****************************************
+
+//********************
 //** 2行目ｱﾄﾞﾚｽｾｯﾄ
-//
+//********************
 void lcd_l2(unsigned char column)
 {
 //	unsigned char pos;
-
 	pos = column & 0x3F;	//列の最大値＝64
-	pos = pos | 0xC0;	//2行目ﾋﾞｯﾄ追加
+	pos = pos | 0xC0;	        //2行目ﾋﾞｯﾄ追加
 	lcd_cout(pos);
 }
-//*****************************************
-//** ｷｬﾗｸﾀLCD　ｺﾝﾄﾛｰﾙｺｰﾄﾞ出力(STKW-186)
-//
+
+//***********************************
+//** ｷｬﾗｸﾀLCD　ｺﾝﾄﾛｰﾙｺｰﾄﾞ出力
+//***********************************
 void lcd_cout(unsigned char code)
 {
 	unsigned char code_msb,code_lsb;
@@ -686,11 +803,11 @@ void lcd_cout(unsigned char code)
 	delay_micro(10);
 	P4 &= 0xEF;		//E=0
 	delay_micro(100);
-//
 }
-//****************************************
+
+//**********************************************
 //** ｷｬﾗｸﾀLCD　ﾃﾞｰﾀｺｰﾄﾞ出力(STKW-186)
-//
+//**********************************************
 void lcd_dout(unsigned char code)
 {
 	unsigned char code_msb,code_lsb;
@@ -712,10 +829,11 @@ void lcd_dout(unsigned char code)
 	delay_micro(10);
 	P4 &= 0xEF;		//E=0
 	delay_micro(100);
-//
 }
-//*****************************************
+
+//****************
 //** ﾏｲｸﾛ秒遅延
+//****************
 void delay_micro(unsigned int cnt)
 {
 	unsigned int del_cnt;
@@ -730,16 +848,26 @@ void delay_micro(unsigned int cnt)
 //			NOP();
 	}
 }
-//******************************************
+
+//*************
 //** ﾐﾘ秒遅延
+//*************
 void delay_msec(unsigned int icnt)
 {
 	unsigned int del_cnt;
-
 	for (del_cnt=0;del_cnt<icnt;del_cnt++){
 //		wdt_rst();
 		delay_micro(1000);
 	}
 }
 
-//*******************************************
+//set cursor
+void set_cursor_position (uint_fast8_t row, uint_fast8_t col)                                                 
+{		 	 
+	if (row) {
+		col |= 0xC0;		//lcd ddram address = col				    
+	} 
+	col |= 0x80;
+	lcd_cout (col); 	
+  }        
+
